@@ -1,0 +1,56 @@
+{
+  "name": "second-read",
+  "version": "0.1.0",
+  "description": "An editor's second read for LLM-written text: a closed-question editorial rubric, a judge schema and deterministic decision rules (evaluator-optimizer pattern). No runtime dependencies.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Antonio Francisco Herrera Tabasco (https://github.com/tonyfht)",
+  "homepage": "https://github.com/tonyfht/second-read",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyfht/second-read.git"
+  },
+  "keywords": ["writing", "editing", "rubric", "llm-as-judge", "evaluator-optimizer", "claude", "linkedin", "newsletter"],
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./index.mjs",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./index.mjs"
+    },
+    "./decide": {
+      "types": "./types/decide.d.ts",
+      "default": "./skills/second-read/scripts/decide.mjs"
+    },
+    "./prompts": {
+      "types": "./types/prompts.d.ts",
+      "default": "./scripts/lib/prompts.mjs"
+    },
+    "./loop": {
+      "types": "./types/loop.d.ts",
+      "default": "./scripts/lib/loop.mjs"
+    },
+    "./rubric.json": "./skills/second-read/rubric.json",
+    "./judge.schema.json": "./skills/second-read/judge.schema.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.mjs",
+    "types/*.d.ts",
+    "skills/second-read/",
+    "scripts/lib/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "typecheck": "tsc -p types/tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

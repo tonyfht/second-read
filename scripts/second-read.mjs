@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import Anthropic from "@anthropic-ai/sdk";
-import { applicableCriteria, validateJudgment } from "../skills/second-read/scripts/decide.mjs";
+import { applicableCriteria, validateJudgment, validateRubric } from "../skills/second-read/scripts/decide.mjs";
 import { formatReport, runLoop } from "./lib/loop.mjs";
 import {
   JUDGE_SYSTEM,
@@ -35,6 +35,9 @@ Options:
   --rubric <file>         custom rubric (default: skills/second-read/rubric.json)
   --min-score <0..1>      override the rubric's min_score
   --max-rewrites <n>      override the rubric's max_rewrites (0 = judge only)
+  --rewrite-on-embedded-instructions
+                          keep rewriting even if the text tries to instruct
+                          the reviewer (default: stop for review)
   --model <id>            writer model (default: claude-opus-5-5)
   --judge-model <id>      judge model (default: same as --model)
   --json                  print the full result as JSON
@@ -50,6 +53,7 @@ const { values, positionals } = parseArgs({
     rubric: { type: "string", default: join(skillDir, "rubric.json") },
     "min-score": { type: "string" },
     "max-rewrites": { type: "string" },
+    "rewrite-on-embedded-instructions": { type: "boolean" },
     model: { type: "string", default: "claude-opus-5-5" },
     "judge-model": { type: "string" },
     json: { type: "boolean", default: false },
@@ -67,12 +71,18 @@ if (!process.env.ANTHROPIC_API_KEY) {
 }
 
 const rubric = JSON.parse(readFileSync(values.rubric, "utf8"));
+const rubricCheck = validateRubric(rubric);
+if (!rubricCheck.ok) {
+  console.error(`Invalid rubric ${values.rubric}:\n- ${rubricCheck.errors.join("\n- ")}`);
+  process.exit(1);
+}
 const judgeSchema = schemaForApi(JSON.parse(readFileSync(join(skillDir, "judge.schema.json"), "utf8")));
 const styleGuide = values["style-guide"] ? readFileSync(values["style-guide"], "utf8") : "";
 const ctx = { hasStyleGuide: Boolean(styleGuide) };
 const overrides = {
   min_score: values["min-score"] === undefined ? undefined : Number(values["min-score"]),
   max_rewrites: values["max-rewrites"] === undefined ? undefined : Number(values["max-rewrites"]),
+  rewrite_on_embedded_instructions: values["rewrite-on-embedded-instructions"],
 };
 const writerModel = values.model;
 const judgeModel = values["judge-model"] ?? writerModel;
@@ -146,7 +156,7 @@ async function main() {
     console.log("\n---\n");
     console.log(formatReport(result, detectLanguage(text)));
   }
-  process.exitCode = result.status === "accepted" ? 0 : 3;
+  process.exitCode = { accepted: 0, open_issues: 3, needs_review: 4 }[result.status];
 }
 
 main().catch((err) => {

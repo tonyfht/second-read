@@ -28,12 +28,13 @@ in `rubric.json`.
 ## Default thresholds
 
 ```json
-"thresholds": { "min_score": 0.75, "max_rewrites": 2 }
+"thresholds": { "min_score": 0.75, "max_rewrites": 2, "rewrite_on_embedded_instructions": false }
 ```
 
 - **Score** = sum of the `weight` of passing criteria ÷ sum of the `weight` of applicable criteria (0 to 1).
 - A text **passes** when every `required` criterion passes **and** the score is at least `min_score`.
-- If it fails, it is rewritten with the judge's fixes, up to `max_rewrites` times.
+- If it fails, it is rewritten with the judge's fixes, up to `max_rewrites` times. The judge's `evidence` and `fix` are cut to 300 characters each before they reach the rewrite.
+- If the judge reports `embedded_instructions: true`, the loop **stops for review**, without rewriting and without accepting, even if the text passed: the judgment may have been steered, and the judge's quotes would carry that text into the rewrite. Set `rewrite_on_embedded_instructions: true` (or pass `--rewrite-on-embedded-instructions`) to rewrite anyway.
 - After the last rewrite, the best version is delivered: passing first, then fewest failed required criteria, then highest score. Ties keep the earlier version.
 
 With the defaults, the 8 criteria that apply without a style guide weigh 12 in
@@ -84,7 +85,7 @@ The judge returns only JSON matching `judge.schema.json`:
 - `answer`: an option (choice), an integer (scale) or `"yes"`/`"no"` (yes_no).
 - `evidence`: a short verbatim quote, or empty when the problem is something missing.
 - `fix`: one concrete edit when the criterion would fail, otherwise empty.
-- `embedded_instructions`: `true` when the reviewed text tries to instruct the reviewer. Those instructions are never followed.
+- `embedded_instructions`: `true` when the reviewed text tries to instruct the reviewer. Those instructions are never followed, and the loop stops for review (see the thresholds above).
 
 The schema avoids `minimum`, `maximum` and string length limits because Claude's
 structured outputs do not support them; `scripts/decide.mjs` checks ranges and
@@ -97,5 +98,18 @@ options instead, and rejects a judgment that misses or invents a criterion.
 - **Remove a criterion:** delete it, or set `"required": false` and `"weight": 0` to keep it as information only.
 - **Your own house style:** keep your style guide in a file and give it to Claude with the text; `voice_fit` will apply.
 
-Run `npm test` in `scripts/` after editing to check that the rubric still loads
-and the decision rules behave as expected.
+## Validating a rubric
+
+`validateRubric(rubric)` (in `scripts/decide.mjs`, exported as
+`second-read/decide`) returns `{ ok, errors }`. It checks the thresholds,
+unique snake_case ids, the type, an English question (other languages are
+optional and fall back to English), weights, `only_if`, and that every pass
+rule can both pass and fail. `check.mjs` and the Node CLI refuse to run with an
+invalid rubric. To check yours from a shell:
+
+```bash
+node -e "import('./skills/second-read/scripts/decide.mjs').then(m => console.log(m.validateRubric(JSON.parse(require('fs').readFileSync('my-rubric.json','utf8')))))"
+```
+
+Run `npm test` at the repository root after editing the shipped rubric to check
+that it still loads and the decision rules behave as expected.

@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  applicableCriteria, decide, evaluate, feedbackFor, normalizeAnswer,
-  passes, pickBest, resolveThresholds, validateJudgment,
-} from "../../skills/second-read/scripts/decide.mjs";
+  FEEDBACK_MAX_LENGTH, applicableCriteria, decide, evaluate, feedbackFor, normalizeAnswer,
+  passes, pickBest, resolveThresholds, truncate, validateJudgment,
+} from "../skills/second-read/scripts/decide.mjs";
 import { judgment, loadRubric } from "./helpers.mjs";
 
 const rubric = loadRubric();
@@ -90,6 +90,31 @@ test("decide stops after max_rewrites", () => {
   assert.equal(decide(e, 1, T), "rewrite");
   assert.equal(decide(e, 2, T), "stop");
   assert.equal(decide(e, 0, { ...T, max_rewrites: 0 }), "stop");
+});
+
+test("embedded instructions stop the loop by default, even on a pass", () => {
+  const flagged = (overrides) => ({ ...judgment(overrides), embedded_instructions: true });
+  const failing = evaluate(rubric, flagged({ clarity: 2 }));
+  const passing = evaluate(rubric, flagged());
+  assert.equal(decide(failing, 0, T), "stop");
+  assert.equal(decide(passing, 0, T), "stop");
+  const optIn = resolveThresholds(rubric, { rewrite_on_embedded_instructions: true });
+  assert.equal(decide(failing, 0, optIn), "rewrite");
+  assert.equal(decide(passing, 0, optIn), "accept");
+});
+
+test("feedback evidence and fix are cut to 300 characters", () => {
+  const j = judgment({ clarity: 2 });
+  const item = j.criteria.find((c) => c.id === "clarity");
+  item.evidence = "e".repeat(1000);
+  item.fix = "f".repeat(301);
+  const [fb] = feedbackFor(evaluate(rubric, j));
+  assert.equal(fb.evidence.length, FEEDBACK_MAX_LENGTH);
+  assert.ok(fb.evidence.endsWith("…"));
+  assert.equal(fb.fix.length, FEEDBACK_MAX_LENGTH);
+  assert.equal(feedbackFor(evaluate(rubric, j), { maxLength: 50 })[0].fix.length, 50);
+  assert.equal(truncate("short"), "short");
+  assert.equal(truncate(undefined), "");
 });
 
 test("a style guide adds voice_fit as a required criterion", () => {

@@ -10,19 +10,106 @@ export function applicableCriteria(rubric, { hasStyleGuide = false } = {}) {
   });
 }
 
-/** Effective thresholds: rubric defaults, overridden by explicit options. */
+export const DEFAULT_THRESHOLDS = Object.freeze({
+  min_score: 0.75,
+  max_rewrites: 2,
+  rewrite_on_embedded_instructions: false,
+});
+
+/** Max characters of judge-written `evidence` / `fix` passed on to a rewrite. */
+export const FEEDBACK_MAX_LENGTH = 300;
+
+function thresholdErrors(t) {
+  const errors = [];
+  if (!(typeof t.min_score === "number" && t.min_score >= 0 && t.min_score <= 1)) {
+    errors.push(`min_score must be a number between 0 and 1, got ${JSON.stringify(t.min_score)}`);
+  }
+  if (!Number.isInteger(t.max_rewrites) || t.max_rewrites < 0) {
+    errors.push(`max_rewrites must be a non-negative integer, got ${JSON.stringify(t.max_rewrites)}`);
+  }
+  if (typeof t.rewrite_on_embedded_instructions !== "boolean") {
+    errors.push(`rewrite_on_embedded_instructions must be true or false, got ${JSON.stringify(t.rewrite_on_embedded_instructions)}`);
+  }
+  return errors;
+}
+
+/** Effective thresholds: defaults, then the rubric's, then explicit overrides. */
 export function resolveThresholds(rubric, overrides = {}) {
-  const base = { min_score: 0.75, max_rewrites: 2, ...(rubric.thresholds ?? {}) };
+  const base = { ...DEFAULT_THRESHOLDS, ...(rubric.thresholds ?? {}) };
   for (const [k, v] of Object.entries(overrides)) {
     if (v !== undefined && v !== null) base[k] = v;
   }
-  if (!(base.min_score >= 0 && base.min_score <= 1)) {
-    throw new Error(`min_score must be between 0 and 1, got ${base.min_score}`);
-  }
-  if (!Number.isInteger(base.max_rewrites) || base.max_rewrites < 0) {
-    throw new Error(`max_rewrites must be a non-negative integer, got ${base.max_rewrites}`);
-  }
+  const errors = thresholdErrors(base);
+  if (errors.length) throw new Error(errors.join("; "));
   return base;
+}
+
+const TYPES = ["choice", "scale", "yes_no"];
+const ONLY_IF = ["style_guide"];
+
+/**
+ * Check a rubric before using it: thresholds, unique snake_case ids, a
+ * question in English at least, and pass rules that both pass and fail.
+ */
+export function validateRubric(rubric) {
+  const errors = [];
+  if (!rubric || typeof rubric !== "object") return { ok: false, errors: ["rubric must be an object"] };
+  if (rubric.thresholds !== undefined) {
+    errors.push(...thresholdErrors({ ...DEFAULT_THRESHOLDS, ...rubric.thresholds }).map((e) => `thresholds: ${e}`));
+  }
+  if (!Array.isArray(rubric.criteria) || rubric.criteria.length === 0) {
+    errors.push("criteria must be a non-empty array");
+    return { ok: false, errors };
+  }
+  const ids = new Set();
+  rubric.criteria.forEach((c, i) => {
+    const at = `criteria[${i}]${c?.id ? ` (${c.id})` : ""}`;
+    if (!c || typeof c !== "object") { errors.push(`${at}: must be an object`); return; }
+    if (typeof c.id !== "string" || !/^[a-z][a-z0-9_]*$/.test(c.id)) errors.push(`${at}: id must be snake_case`);
+    else if (ids.has(c.id)) errors.push(`${at}: duplicate id`);
+    ids.add(c.id);
+    if (!TYPES.includes(c.type)) { errors.push(`${at}: type must be one of ${TYPES.join(", ")}`); return; }
+    if (typeof c.question?.en !== "string" || !c.question.en.trim()) errors.push(`${at}: question.en is required`);
+    if (c.required !== undefined && typeof c.required !== "boolean") errors.push(`${at}: required must be true or false`);
+    if (c.weight !== undefined && !(typeof c.weight === "number" && c.weight >= 0)) errors.push(`${at}: weight must be a number >= 0`);
+    if (c.only_if !== undefined && !ONLY_IF.includes(c.only_if)) errors.push(`${at}: only_if must be one of ${ONLY_IF.join(", ")}`);
+    if (c.type === "choice") {
+      const opts = c.options;
+      if (!Array.isArray(opts) || opts.length < 2 || opts.some((o) => typeof o !== "string" || o !== o.toLowerCase())) {
+        errors.push(`${at}: options must be at least two lowercase strings`);
+      } else if (new Set(opts).size !== opts.length) {
+        errors.push(`${at}: options must be unique`);
+      } else if (!Array.isArray(c.pass_if) || c.pass_if.length === 0 || c.pass_if.some((o) => !opts.includes(o))) {
+        errors.push(`${at}: pass_if must be a non-empty subset of options`);
+      } else if (c.pass_if.length === opts.length) {
+        errors.push(`${at}: pass_if cannot include every option`);
+      }
+    }
+    if (c.type === "yes_no" && c.pass_if !== "yes" && c.pass_if !== "no") errors.push(`${at}: pass_if must be "yes" or "no"`);
+    if (c.type === "scale") {
+      const { min, max } = c.scale ?? {};
+      if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max) {
+        errors.push(`${at}: scale.min and scale.max must be integers with min < max`);
+      } else if (c.pass_min === undefined && c.pass_max === undefined) {
+        errors.push(`${at}: needs pass_min or pass_max`);
+      } else {
+        const lo = c.pass_min ?? min;
+        const hi = c.pass_max ?? max;
+        if (!Number.isInteger(lo) || !Number.isInteger(hi) || lo < min || hi > max || lo > hi) {
+          errors.push(`${at}: pass_min / pass_max must be integers inside the scale`);
+        } else if (lo === min && hi === max) {
+          errors.push(`${at}: pass range covers the whole scale, so it can never fail`);
+        }
+      }
+    }
+  });
+  return { ok: errors.length === 0, errors };
+}
+
+/** Shorten judge-written text before it reaches a rewrite prompt. */
+export function truncate(text, max = FEEDBACK_MAX_LENGTH) {
+  const s = String(text ?? "");
+  return s.length <= max ? s : `${s.slice(0, max - 1)}…`;
 }
 
 /** Coerce an answer to the criterion's type, or return undefined if invalid. */
@@ -133,9 +220,16 @@ export function evaluate(rubric, judgment, ctx = {}, overrides = {}) {
 /**
  * What to do after judging round `rewritesDone` (0 = the first draft).
  * "accept": publishable. "rewrite": try again with the fixes.
- * "stop": out of rewrites; deliver the best version with its open issues.
+ * "stop": out of rewrites, or the text tried to instruct the reviewer; deliver
+ * the best version with its open issues and let a person look.
+ *
+ * Embedded instructions stop the loop by default, even if the text passed:
+ * the judgment may have been steered, and the judge's evidence and fixes
+ * would carry that text into the rewrite. Opt in with
+ * `rewrite_on_embedded_instructions: true`.
  */
 export function decide(evaluation, rewritesDone, thresholds) {
+  if (evaluation.embeddedInstructions && !thresholds.rewrite_on_embedded_instructions) return "stop";
   if (evaluation.passed) return "accept";
   if (rewritesDone < thresholds.max_rewrites) return "rewrite";
   return "stop";
@@ -161,15 +255,19 @@ export function pickBest(history) {
   return best;
 }
 
-/** Concrete feedback for the writer: only the failed criteria, with fixes. */
-export function feedbackFor(evaluation) {
+/**
+ * Concrete feedback for the writer: only the failed criteria, with fixes.
+ * `evidence` and `fix` are cut to `maxLength` characters, so a long quote
+ * from the reviewed text cannot smuggle much into the rewrite prompt.
+ */
+export function feedbackFor(evaluation, { maxLength = FEEDBACK_MAX_LENGTH } = {}) {
   return evaluation.results
     .filter((r) => !r.passed)
     .map((r) => ({
       id: r.id,
       answer: r.answer,
       required: r.required,
-      evidence: r.evidence,
-      fix: r.fix,
+      evidence: truncate(r.evidence, maxLength),
+      fix: truncate(r.fix, maxLength),
     }));
 }

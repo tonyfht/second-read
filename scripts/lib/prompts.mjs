@@ -1,6 +1,8 @@
 // Prompt builders for the writer and the judge. Pure functions: easy to read,
 // easy to test, and the same wording the skill uses in SKILL.md.
 
+import { truncate } from "../../skills/second-read/scripts/decide.mjs";
+
 const SPANISH_HINTS = /[ñ¿¡]|\b(que|de|el|la|los|las|para|por|con|una|pero|porque|también|está|cómo)\b/gi;
 const ENGLISH_HINTS = /\b(the|and|that|with|for|this|but|because|you|your|is|are|how)\b/gi;
 
@@ -67,12 +69,15 @@ export function buildDraftPrompt({ brief, format, reader, styleGuide }) {
   return parts.join("\n\n");
 }
 
-/** User message for a rewrite: the current text plus only the failed criteria. */
+/**
+ * User message for a rewrite: the current text plus only the failed criteria.
+ * Judge-written evidence and fixes are cut to 300 characters each.
+ */
 export function buildRewritePrompt({ text, feedback, format, styleGuide }) {
   const issues = feedback
     .map((f) => `- ${f.id}${f.required ? " (required)" : ""}: answered ${JSON.stringify(f.answer)}.` +
-      (f.evidence ? ` Evidence: "${f.evidence}".` : "") +
-      (f.fix ? ` Fix: ${f.fix}` : ""))
+      (f.evidence ? ` Evidence: "${truncate(f.evidence)}".` : "") +
+      (f.fix ? ` Fix: ${truncate(f.fix)}` : ""))
     .join("\n");
   const parts = [
     `Rewrite this ${format || "text"} to fix the problems an editor found. Fix what failed and leave the rest alone. Keep the author's meaning, claims, examples and language. To fix an unsupported claim, soften it, remove it or mark it [source needed]; never invent support.`,

@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-export const skillDir = join(here, "..", "..", "skills", "second-read");
+export const skillDir = join(here, "..", "skills", "second-read");
 export const loadRubric = () => JSON.parse(readFileSync(join(skillDir, "rubric.json"), "utf8"));
 
 // Answers that pass every default criterion.

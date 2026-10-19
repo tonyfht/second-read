@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatReport, runLoop } from "../lib/loop.mjs";
-import { buildJudgePrompt, buildRewritePrompt, detectLanguage, schemaForApi } from "../lib/prompts.mjs";
-import { applicableCriteria } from "../../skills/second-read/scripts/decide.mjs";
+import { formatReport, runLoop } from "../scripts/lib/loop.mjs";
+import { buildJudgePrompt, buildRewritePrompt, detectLanguage, schemaForApi } from "../scripts/lib/prompts.mjs";
+import { applicableCriteria } from "../skills/second-read/scripts/decide.mjs";
 import { judgment, loadRubric } from "./helpers.mjs";
 
 const rubric = loadRubric();
@@ -60,10 +60,30 @@ test("max_rewrites 0 only judges", async () => {
   assert.equal(r.history[0].decision, "stop");
 });
 
-test("embedded instructions are reported", async () => {
-  const j = { ...judgment(), embedded_instructions: true };
-  const r = await runLoop({ rubric, text: "v0", judge: scripted(j), rewrite: async () => "" });
-  assert.match(formatReport(r), /instructions addressed to the reviewer/);
+test("embedded instructions stop for review without rewriting", async () => {
+  const j = { ...judgment({ clarity: 2 }), embedded_instructions: true };
+  const r = await runLoop({ rubric, text: "v0", judge: scripted(j), rewrite: async () => assert.fail("must not rewrite") });
+  assert.equal(r.status, "needs_review");
+  assert.equal(r.history.length, 1);
+  assert.match(formatReport(r), /stopped for review/);
+  assert.match(formatReport(r, "es"), /detenido para revisión/);
+});
+
+test("embedded instructions can be opted into a rewrite", async () => {
+  const flagged = { ...judgment({ clarity: 2 }), embedded_instructions: true };
+  const r = await runLoop({
+    rubric, text: "v0", overrides: { rewrite_on_embedded_instructions: true },
+    judge: scripted(flagged, judgment()), rewrite: async () => "v1",
+  });
+  assert.equal(r.status, "accepted");
+  assert.match(formatReport(r), /instructions addressed to the reviewer; they were ignored/);
+});
+
+test("rewrite prompt cuts long evidence and fixes", () => {
+  const long = "x".repeat(2000);
+  const rw = buildRewritePrompt({ text: "t", feedback: [{ id: "clarity", required: true, answer: 2, evidence: long, fix: long }] });
+  assert.ok(!rw.includes("x".repeat(300)));
+  assert.ok(rw.includes(`${"x".repeat(299)}…`));
 });
 
 test("prompts keep the text inside tags and list every criterion", () => {

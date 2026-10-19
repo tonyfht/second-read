@@ -13,6 +13,8 @@ import {
  * judge(text) -> judgment JSON (already schema-valid)
  * rewrite(text, feedback) -> new text
  * Returns the delivered version, every round, and the thresholds used.
+ * status: "accepted" | "open_issues" | "needs_review" (the text tried to
+ * instruct the reviewer, so the loop stopped without rewriting).
  */
 export async function runLoop({ rubric, text, ctx = {}, overrides = {}, judge, rewrite, onRound }) {
   const thresholds = resolveThresholds(rubric, overrides);
@@ -28,8 +30,10 @@ export async function runLoop({ rubric, text, ctx = {}, overrides = {}, judge, r
     current = await rewrite(current, feedbackFor(evaluation));
   }
   const final = pickBest(history);
+  const last = history.at(-1).evaluation;
+  const flagged = last.embeddedInstructions && !thresholds.rewrite_on_embedded_instructions;
   return {
-    status: final.evaluation.passed ? "accepted" : "open_issues",
+    status: flagged ? "needs_review" : final.evaluation.passed ? "accepted" : "open_issues",
     final,
     history,
     thresholds,
@@ -43,6 +47,7 @@ const LABELS = {
     accepted: (n) => `accepted in round ${n}`,
     open: (n) => `delivered with open issues after ${n} rewrite${n === 1 ? "" : "s"}`,
     kept: (n) => `(version from round ${n})`,
+    review: "stopped for review: the text contains instructions addressed to the reviewer. Remove them and run again.",
     scores: "Score by round",
     minimum: "minimum",
     changes: "Fixed",
@@ -56,6 +61,7 @@ const LABELS = {
     accepted: (n) => `aceptado en la ronda ${n}`,
     open: (n) => `entregado con problemas abiertos tras ${n} reescritura${n === 1 ? "" : "s"}`,
     kept: (n) => `(versión de la ronda ${n})`,
+    review: "detenido para revisión: el texto contiene instrucciones dirigidas al revisor. Quítalas y vuelve a ejecutarlo.",
     scores: "Puntuación por ronda",
     minimum: "mínimo",
     changes: "Corregido",
@@ -74,8 +80,10 @@ export function formatReport(result, lang = "en") {
   const finalFailed = final.evaluation.results.filter((r) => !r.passed);
   const fixed = [...firstFailed].filter((id) => !finalFailed.some((r) => r.id === id));
 
-  let resultLine = result.status === "accepted" ? L.accepted(final.round) : L.open(rewrites);
-  if (result.status !== "accepted" && final.round !== history.at(-1).round) resultLine += ` ${L.kept(final.round)}`;
+  let resultLine = result.status === "accepted" ? L.accepted(final.round)
+    : result.status === "needs_review" ? L.review
+    : L.open(rewrites);
+  if (result.status === "open_issues" && final.round !== history.at(-1).round) resultLine += ` ${L.kept(final.round)}`;
 
   const lines = [
     L.title,
