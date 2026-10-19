@@ -70,7 +70,7 @@ test("optional failures pass down to exactly min_score", () => {
   const three = evaluate(rubric, judgment({ overpromising: "yes", single_cta: "multiple", format_fit: "too_long" }));
   assert.equal(three.score, 0.75);
   assert.equal(three.passed, true);
-  const four = evaluate(rubric, judgment({ overpromising: "yes", single_cta: "none", format_fit: "too_long", one_main_idea: "no" }));
+  const four = evaluate(rubric, judgment({ overpromising: "yes", single_cta: "multiple", format_fit: "too_long", one_main_idea: "no" }));
   assert.equal(four.score, 0.667);
   assert.equal(four.passed, false);
 });
@@ -117,6 +117,13 @@ test("feedback evidence and fix are cut to 300 characters", () => {
   assert.equal(truncate(undefined), "");
 });
 
+test("single_cta passes with no call to action or one, fails with several", () => {
+  assert.equal(passes(byId("single_cta"), "none"), true);
+  assert.equal(passes(byId("single_cta"), "one"), true);
+  assert.equal(passes(byId("single_cta"), "multiple"), false);
+  assert.equal(evaluate(rubric, judgment({ single_cta: "none" })).score, 1);
+});
+
 test("a style guide adds voice_fit as a required criterion", () => {
   const e = evaluate(rubric, judgment({ voice_fit: 3 }, { styleGuide: true }), { hasStyleGuide: true });
   assert.deepEqual(e.requiredFailures, ["voice_fit"]);
@@ -135,7 +142,7 @@ test("pickBest prefers passing, then fewer required failures, then score, then e
   const v = (text, overrides) => ({ text, evaluation: evaluate(rubric, judgment(overrides)) });
   const twoRequired = v("a", { clarity: 2, hook_strength: "weak" });
   const oneRequired = v("b", { clarity: 2 });
-  const passing = v("c", { single_cta: "none" });
+  const passing = v("c", { single_cta: "multiple" });
   assert.equal(pickBest([twoRequired, oneRequired]).text, "b");
   assert.equal(pickBest([oneRequired, passing, v("d", {})]).text, "d");
   assert.equal(pickBest([passing, twoRequired]).text, "c");

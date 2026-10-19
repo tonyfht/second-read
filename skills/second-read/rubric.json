@@ -1,6 +1,6 @@
 {
   "$comment": "Second Read editorial rubric. Edit freely: add, remove or reword criteria, change pass rules and thresholds. See RUBRIC.md for the format.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "thresholds": {
     "min_score": 0.75,
     "max_rewrites": 2,
@@ -66,11 +66,11 @@
       "required": false,
       "weight": 1,
       "question": {
-        "en": "How many distinct calls to action does the text contain (comment, follow, click, subscribe, DM...)?",
-        "es": "¿Cuántas llamadas a la acción distintas contiene el texto (comentar, seguir, hacer clic, suscribirse, escribir por privado...)?"
+        "en": "How many distinct calls to action does the text contain (comment, follow, click, subscribe, DM...)? Having none is fine; the problem is several asks competing with each other.",
+        "es": "¿Cuántas llamadas a la acción distintas contiene el texto (comentar, seguir, hacer clic, suscribirse, escribir por privado...)? No tener ninguna está bien; el problema es que varias compitan entre sí."
       },
       "options": ["none", "one", "multiple"],
-      "pass_if": ["one"]
+      "pass_if": ["none", "one"]
     },
     {
       "id": "clarity",

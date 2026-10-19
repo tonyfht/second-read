@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-2E7A4C"></a>
-  <a href="CHANGELOG.md"><img alt="Versión 0.1.0" src="https://img.shields.io/badge/versi%C3%B3n-0.1.0-1F1D1A"></a>
+  <a href="CHANGELOG.md"><img alt="Versión 0.1.1" src="https://img.shields.io/badge/versi%C3%B3n-0.1.1-1F1D1A"></a>
   <a href="https://code.claude.com/docs/en/plugins"><img alt="Plugin de Claude Code" src="https://img.shields.io/badge/Claude%20Code-plugin-C43D2B"></a>
   <a href="https://code.claude.com/docs/en/skills"><img alt="Agent Skill" src="https://img.shields.io/badge/Agent-Skill-C43D2B"></a>
   <a href="https://www.anthropic.com/engineering/building-effective-agents"><img alt="Patrón evaluator-optimizer" src="https://img.shields.io/badge/patr%C3%B3n-evaluator--optimizer-6B6560"></a>
@@ -157,7 +157,7 @@ Nueve preguntas cerradas por defecto, cada una en inglés y en español
 | 🤖 | Suena a IA: frases hechas, simetría forzada, vocabulario vacío | escala | ≤ 2 de 5 |
 | 🔎 | Afirmaciones sin respaldo | sí/no | `no` |
 | 🎁 | Promesas de resultados | sí/no | `no` |
-| 👉 | Una sola llamada a la acción | elección | `one` |
+| 👉 | Como mucho una llamada a la acción | elección | `none` o `one` |
 | 💡 | Claridad | escala | ≥ 4 de 5 |
 | 🎯 | Una sola idea principal | sí/no | `yes` |
 | 📐 | Encaje con el formato | elección | `fits` |
@@ -238,7 +238,7 @@ como información con `"required": false, "weight": 0`.
 Las llamadas al modelo las pones tú. Instala una versión etiquetada desde GitHub:
 
 ```bash
-npm install github:tonyfht/second-read#v0.1.0
+npm install github:tonyfht/second-read#v0.1.1
 ```
 
 ```js

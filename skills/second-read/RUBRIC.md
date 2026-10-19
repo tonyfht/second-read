@@ -13,7 +13,7 @@ the same answers always give the same result.
 | `sounds_like_ai` | scale 1–5 | How much does it read like generic AI text? | ≤ 2 | yes | 2 |
 | `unsupported_claims` | yes/no | Facts, numbers or causal claims with no support? | `no` | yes | 2 |
 | `overpromising` | yes/no | Does it promise results to the reader? | `no` | no | 1 |
-| `single_cta` | choice | How many calls to action? | `one` | no | 1 |
+| `single_cta` | choice | How many calls to action? | `none` or `one` | no | 1 |
 | `clarity` | scale 1–5 | How easy is the main point on one read? | ≥ 4 | yes | 2 |
 | `one_main_idea` | yes/no | One main idea? | `yes` | no | 1 |
 | `format_fit` | choice | Do length and layout fit the format? | `fits` | no | 1 |
