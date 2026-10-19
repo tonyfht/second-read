@@ -91,7 +91,7 @@ const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 
 // One structured-output call. `fallbacks: "default"` lets the API retry on
 // Anthropic's recommended model if a safety classifier declines the request.
-async function callJson({ model, system, prompt, schema, effort }) {
+async function callJson({ model, system, prompt, schema, effort, signal }) {
   const response = await client.beta.messages.create({
     model,
     max_tokens: 16000,
@@ -100,7 +100,7 @@ async function callJson({ model, system, prompt, schema, effort }) {
     output_config: { effort, format: { type: "json_schema", schema } },
     system,
     messages: [{ role: "user", content: prompt }],
-  });
+  }, { signal });
   if (response.stop_reason === "refusal") {
     throw new Error(`The model declined the request (${response.stop_details?.category ?? "no category"}).`);
   }
@@ -113,7 +113,7 @@ async function callJson({ model, system, prompt, schema, effort }) {
 
 const criteria = applicableCriteria(rubric, ctx);
 
-async function judge(text) {
+async function judge(text, { signal } = {}) {
   const prompt = buildJudgePrompt({
     text, criteria, lang: detectLanguage(text),
     format: values.format, reader: values.reader, styleGuide,
@@ -121,42 +121,49 @@ async function judge(text) {
   // Structured outputs guarantee the shape; the rubric check catches missing
   // criteria or out-of-range answers. One retry, then give up.
   for (let attempt = 1; ; attempt++) {
-    const judgment = await callJson({ model: judgeModel, system: JUDGE_SYSTEM, prompt, schema: judgeSchema, effort: "medium" });
+    const judgment = await callJson({ model: judgeModel, system: JUDGE_SYSTEM, prompt, schema: judgeSchema, effort: "medium", signal });
     const check = validateJudgment(rubric, judgment, ctx);
     if (check.ok) return judgment;
     if (attempt >= 2) throw new Error(`The judge's answer does not match the rubric: ${check.errors.join("; ")}`);
   }
 }
 
-async function rewrite(text, feedback) {
+async function rewrite(text, feedback, { signal } = {}) {
   const prompt = buildRewritePrompt({ text, feedback, format: values.format, styleGuide });
-  const { text: next } = await callJson({ model: writerModel, system: WRITER_SYSTEM, prompt, schema: WRITER_SCHEMA, effort: "high" });
+  const { text: next } = await callJson({ model: writerModel, system: WRITER_SYSTEM, prompt, schema: WRITER_SCHEMA, effort: "high", signal });
   return next;
 }
 
 async function main() {
+  // Ctrl+C cancels the call in flight. After round 0 the loop still delivers
+  // the best judged version, with status "incomplete".
+  const controller = new AbortController();
+  process.once("SIGINT", () => controller.abort(new Error("interrupted")));
+  const { signal } = controller;
+
   let text;
   if (values.brief) {
     const prompt = buildDraftPrompt({ brief: values.brief, format: values.format, reader: values.reader, styleGuide });
-    ({ text } = await callJson({ model: writerModel, system: WRITER_SYSTEM, prompt, schema: WRITER_SCHEMA, effort: "high" }));
+    ({ text } = await callJson({ model: writerModel, system: WRITER_SYSTEM, prompt, schema: WRITER_SCHEMA, effort: "high", signal }));
   } else {
     const source = positionals[0];
     text = readFileSync(source === "-" ? 0 : source, "utf8").trim();
   }
 
   const result = await runLoop({
-    rubric, text, ctx, overrides, judge, rewrite,
+    rubric, text, ctx, overrides, judge, rewrite, signal,
     onRound: (r) => console.error(`round ${r.round}: score ${r.evaluation.score.toFixed(2)} → ${r.decision}`),
   });
 
   if (values.json) {
-    console.log(JSON.stringify(result, null, 2));
+    const error = result.error && { name: result.error.name, message: result.error.message };
+    console.log(JSON.stringify({ ...result, error }, null, 2));
   } else {
     console.log(result.final.text);
     console.log("\n---\n");
     console.log(formatReport(result, detectLanguage(text)));
   }
-  process.exitCode = { accepted: 0, open_issues: 3, needs_review: 4 }[result.status];
+  process.exitCode = { accepted: 0, open_issues: 3, needs_review: 4, incomplete: 5 }[result.status];
 }
 
 main().catch((err) => {

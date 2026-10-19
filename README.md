@@ -175,11 +175,16 @@ import judgeSchema from "second-read/judge.schema.json" with { type: "json" };
 const result = await runLoop({
   rubric,
   text: draft,
-  judge: async (text) => callYourModelForJson(text),        // must match judge.schema.json
-  rewrite: async (text, feedback) => callYourModelForText(text, feedback),
+  judge: async (text, { signal }) => callYourModelForJson(text, signal),   // must match judge.schema.json
+  rewrite: async (text, feedback, { signal }) => callYourModelForText(text, feedback, signal),
+  signal: AbortSignal.timeout(120_000),                                  // optional
 });
-console.log(result.status, formatReport(result));           // accepted | open_issues | needs_review
+console.log(result.status, formatReport(result)); // accepted | open_issues | needs_review | incomplete
 ```
+
+If a judge or rewrite call fails, or the signal aborts, after round 0 has been
+judged, `runLoop` does not throw: it returns the best judged version with
+status `incomplete` and the cause in `error`. A failure before that throws.
 
 `scripts/second-read.mjs` is a complete example with the Anthropic SDK.
 
@@ -210,7 +215,9 @@ node second-read.mjs --brief "Our onboarding took 41 days; we added a week-one c
 ```
 
 Exit code 0 means accepted, 3 delivered with open issues, 4 stopped for review
-(embedded instructions). `--json` prints every round.
+(embedded instructions), 5 incomplete (a call failed or you pressed Ctrl+C
+after round 0; the best judged version is printed). `--json` prints every
+round.
 
 Tests and type check, at the repository root (no API key needed):
 
@@ -408,11 +415,17 @@ import judgeSchema from "second-read/judge.schema.json" with { type: "json" };
 const result = await runLoop({
   rubric,
   text: borrador,
-  judge: async (text) => llamaATuModeloParaJson(text),       // debe cumplir judge.schema.json
-  rewrite: async (text, feedback) => llamaATuModeloParaTexto(text, feedback),
+  judge: async (text, { signal }) => llamaATuModeloParaJson(text, signal),   // debe cumplir judge.schema.json
+  rewrite: async (text, feedback, { signal }) => llamaATuModeloParaTexto(text, feedback, signal),
+  signal: AbortSignal.timeout(120_000),                                      // opcional
 });
-console.log(result.status, formatReport(result, "es"));     // accepted | open_issues | needs_review
+console.log(result.status, formatReport(result, "es")); // accepted | open_issues | needs_review | incomplete
 ```
+
+Si una llamada al juez o a la reescritura falla, o se aborta la señal, después
+de juzgar la ronda 0, `runLoop` no lanza ninguna excepción: devuelve la mejor
+versión juzgada con estado `incomplete` y la causa en `error`. Un fallo antes
+de eso sí lanza la excepción.
 
 `scripts/second-read.mjs` es un ejemplo completo con el SDK de Anthropic.
 
@@ -443,8 +456,9 @@ node second-read.mjs --brief "Nuestro onboarding tardaba 41 días; añadimos una
 ```
 
 El código de salida 0 significa aceptado; 3, entregado con problemas
-abiertos; 4, detenido para revisión (instrucciones incrustadas). `--json`
-muestra todas las rondas.
+abiertos; 4, detenido para revisión (instrucciones incrustadas); 5,
+incompleto (una llamada falló o pulsaste Ctrl+C después de la ronda 0; se
+muestra la mejor versión juzgada). `--json` muestra todas las rondas.
 
 Tests y comprobación de tipos, en la raíz del repositorio (no necesitan clave
 de API):

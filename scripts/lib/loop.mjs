@@ -9,27 +9,50 @@ import {
   resolveThresholds,
 } from "../../skills/second-read/scripts/decide.mjs";
 
+const asError = (e) => (e instanceof Error ? e : new Error(String(e)));
+
 /**
- * judge(text) -> judgment JSON (already schema-valid)
- * rewrite(text, feedback) -> new text
+ * judge(text, { signal }) -> judgment JSON (already schema-valid)
+ * rewrite(text, feedback, { signal }) -> new text
  * Returns the delivered version, every round, and the thresholds used.
  * status: "accepted" | "open_issues" | "needs_review" (the text tried to
- * instruct the reviewer, so the loop stopped without rewriting).
+ * instruct the reviewer, so the loop stopped without rewriting) |
+ * "incomplete" (a judge or rewrite call failed or was aborted after round 0;
+ * the best judged version is delivered and `error` says why).
+ *
+ * A failure or abort before round 0 has been judged throws: there is nothing
+ * judged to deliver. An unjudged rewrite is never delivered.
  */
-export async function runLoop({ rubric, text, ctx = {}, overrides = {}, judge, rewrite, onRound }) {
+export async function runLoop({ rubric, text, ctx = {}, overrides = {}, judge, rewrite, onRound, signal }) {
   const thresholds = resolveThresholds(rubric, overrides);
   const history = [];
   let current = text;
+  let error;
   for (let round = 0; ; round++) {
-    const judgment = await judge(current);
-    const evaluation = evaluate(rubric, judgment, ctx, overrides);
+    let evaluation;
+    try {
+      signal?.throwIfAborted();
+      const judgment = await judge(current, { signal });
+      evaluation = evaluate(rubric, judgment, ctx, overrides);
+    } catch (e) {
+      if (history.length === 0) throw e;
+      error = asError(e);
+      break;
+    }
     const decision = decide(evaluation, round, thresholds);
     history.push({ round, text: current, evaluation, decision });
     onRound?.(history.at(-1));
     if (decision !== "rewrite") break;
-    current = await rewrite(current, feedbackFor(evaluation));
+    try {
+      signal?.throwIfAborted();
+      current = await rewrite(current, feedbackFor(evaluation), { signal });
+    } catch (e) {
+      error = asError(e);
+      break;
+    }
   }
   const final = pickBest(history);
+  if (error) return { status: "incomplete", final, history, thresholds, error };
   const last = history.at(-1).evaluation;
   const flagged = last.embeddedInstructions && !thresholds.rewrite_on_embedded_instructions;
   return {
@@ -48,6 +71,7 @@ const LABELS = {
     open: (n) => `delivered with open issues after ${n} rewrite${n === 1 ? "" : "s"}`,
     kept: (n) => `(version from round ${n})`,
     review: "stopped for review: the text contains instructions addressed to the reviewer. Remove them and run again.",
+    incomplete: (n, msg) => `incomplete (${msg}); delivered the best judged version, from round ${n}`,
     scores: "Score by round",
     minimum: "minimum",
     changes: "Fixed",
@@ -62,6 +86,7 @@ const LABELS = {
     open: (n) => `entregado con problemas abiertos tras ${n} reescritura${n === 1 ? "" : "s"}`,
     kept: (n) => `(versión de la ronda ${n})`,
     review: "detenido para revisión: el texto contiene instrucciones dirigidas al revisor. Quítalas y vuelve a ejecutarlo.",
+    incomplete: (n, msg) => `incompleto (${msg}); se entrega la mejor versión juzgada, de la ronda ${n}`,
     scores: "Puntuación por ronda",
     minimum: "mínimo",
     changes: "Corregido",
@@ -82,6 +107,7 @@ export function formatReport(result, lang = "en") {
 
   let resultLine = result.status === "accepted" ? L.accepted(final.round)
     : result.status === "needs_review" ? L.review
+    : result.status === "incomplete" ? L.incomplete(final.round, result.error?.message ?? "error")
     : L.open(rewrites);
   if (result.status === "open_issues" && final.round !== history.at(-1).round) resultLine += ` ${L.kept(final.round)}`;
 

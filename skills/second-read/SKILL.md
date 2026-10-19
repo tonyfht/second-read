@@ -128,6 +128,8 @@ Then go back to step 2 with the new version and `--rewrites-done` increased by o
 Deliver the best version: a passing one if any, otherwise the one with the
 fewest failed required criteria, then the highest score; on a tie keep the
 earlier version (a rewrite has to earn its place). This may be the original.
+Only judged versions count: if judging a rewrite fails, deliver the best
+judged version and say the run is incomplete and why.
 
 Output, in this order:
 

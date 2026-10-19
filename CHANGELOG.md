@@ -12,6 +12,7 @@ All notable changes to this project are documented here. The format follows
 - Editorial rubric (`rubric.json`) in English and Spanish with nine criteria: hook strength, sounds like AI, unsupported claims, overpromising, single call to action, clarity, one main idea, format fit and, with a style guide, voice fit.
 - Judge answer schema (`judge.schema.json`) and default thresholds (`min_score` 0.75, `max_rewrites` 2, `rewrite_on_embedded_instructions` false), documented in `RUBRIC.md`.
 - Safe defaults against prompt injection: a text the judge flags with `embedded_instructions` stops the loop for review instead of being rewritten or accepted; judge-written `evidence` and `fix` are cut to 300 characters before a rewrite.
+- `runLoop` keeps judged work when something fails: a judge or rewrite error, or an abort through the optional `signal` (`AbortSignal`, passed on to `judge` and `rewrite`), after round 0 returns the best judged version with status `incomplete` and `error`; before round 0 it throws. The CLI cancels on Ctrl+C and exits with code 5.
 - `validateRubric()` for custom rubrics; `check.mjs` and the CLI refuse invalid ones.
 - Dependency-free decision script (`skills/second-read/scripts/check.mjs`).
 - Library package with no runtime dependencies: `second-read`, `second-read/decide`, `second-read/prompts`, `second-read/loop`, `second-read/rubric.json`, `second-read/judge.schema.json`, with TypeScript types.
