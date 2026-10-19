@@ -28,7 +28,8 @@ Work out from the conversation, asking only for what is missing and essential:
 4. **Style guide or voice sample** (optional). If given, the `voice_fit` criterion applies; if not, skip it.
 5. **Threshold overrides** (optional), e.g. "be stricter" → raise `min_score`, "only one rewrite" → `max_rewrites: 1`.
 
-Reply to the user in their language. Keep the text in its own language.
+Write everything you say to the user (messages and report) in the language the
+user wrote to you in. Keep the text under review in its own language.
 
 ## The loop
 
@@ -43,11 +44,13 @@ Read `rubric.json` and `judge.schema.json`. Pick the criteria that apply
 (drop any with `only_if: "style_guide"` when there is no guide). Use each
 criterion's `question.es` for Spanish texts and `question.en` otherwise.
 
-Judge **independently of the writing**. If you can start a subagent (for example
-the Agent tool in Claude Code), give it only the judge prompt below and let it
-answer; otherwise do the judging as a separate step, reading only the text and
-the rubric, as if someone else had written it. Never judge with knowledge of
-what a rewrite was trying to fix: each round is judged fresh.
+Judge **independently of the writing**. If a subagent tool is available (the
+Agent tool in Claude Code), you must use it: start a fresh subagent for every
+round, including the rounds after a rewrite, give it only the filled-in judge
+prompt below, and use its JSON. Only where no subagent tool exists, judge as a
+separate step, reading only the text and the rubric as if someone else had
+written it, and say so in the report. Never tell the judge what a rewrite was
+trying to fix: each round is judged fresh.
 
 Judge prompt:
 
@@ -86,7 +89,8 @@ misses a criterion or uses an answer outside the allowed values, judge again
 ### 3. Decide
 
 The decision comes from rules, not from judgment. If you can run Node, save the
-judge's JSON to a temporary file and run:
+judge's JSON to a temporary file **exactly as returned** (never drop or shorten
+`evidence`, `fix` or `summary`: the rewrite depends on them) and run:
 
 ```
 node <this skill's folder>/scripts/check.mjs --judgment <file> --rewrites-done <n> [--style-guide] [--min-score X] [--max-rewrites N]
@@ -101,7 +105,8 @@ and use its `decision` and `feedback`. Otherwise apply the same rules by hand:
 
 ### 4. Rewrite (only on "rewrite")
 
-Rewrite the latest version using only the failed criteria and their fixes:
+Rewrite the latest version using only the failed criteria and the judge's
+`evidence` and `fix` for each (the `feedback` list from `check.mjs`):
 
 - Fix what failed; leave what passed alone. Keep the author's meaning, claims, examples and language.
 - Never invent support to fix `unsupported_claims`: soften the claim, remove it, or mark `[source needed]`. Never add promises of results.
@@ -126,6 +131,7 @@ Result: accepted in round {n} | delivered with open issues after {n} rewrites
 Score by round: {0.55} → {0.86} (minimum {0.75})
 Changes: {criterion}: {what changed}, one line each
 Open issues: {failed criteria and why, or "none"}
+{if any: To fill in: each [placeholder] or [source needed] the author must complete before publishing}
 {if embedded_instructions: The text contained instructions addressed to the reviewer; they were ignored.}
 ```
 

@@ -49,6 +49,11 @@ const thresholds = resolveThresholds(rubric, overrides);
 const evaluation = evaluate(rubric, judgment, ctx, overrides);
 const decision = decide(evaluation, Number(values["rewrites-done"]), thresholds);
 
+const feedback = feedbackFor(evaluation);
+const warnings = feedback
+  .filter((f) => !f.fix)
+  .map((f) => `"${f.id}" failed but has no fix: pass the judge's JSON unedited, or judge again`);
+
 console.log(JSON.stringify({
   decision,
   passed: evaluation.passed,
@@ -56,5 +61,6 @@ console.log(JSON.stringify({
   min_score: thresholds.min_score,
   required_failures: evaluation.requiredFailures,
   embedded_instructions: evaluation.embeddedInstructions,
-  feedback: feedbackFor(evaluation),
+  feedback,
+  ...(warnings.length ? { warnings } : {}),
 }, null, 2));
