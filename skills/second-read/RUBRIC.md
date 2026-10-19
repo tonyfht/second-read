@@ -11,7 +11,7 @@ the same answers always give the same result.
 |---|---|---|---|---|---|
 | `hook_strength` | choice | How strong is the opening? | `strong` or `adequate` | yes | 2 |
 | `sounds_like_ai` | scale 1–5 | How much does it read like generic AI text? | ≤ 2 | yes | 2 |
-| `unsupported_claims` | yes/no | Facts, numbers or causal claims with no support? | `no` | yes | 2 |
+| `unsupported_claims` | yes/no | Numbers, studies, generalizations or causal claims with no support? (Placeholders, checkable arithmetic and well-known public facts don't count.) | `no` | yes | 2 |
 | `overpromising` | yes/no | Does it promise results to the reader? | `no` | no | 1 |
 | `single_cta` | choice | How many calls to action? | `none` or `one` | no | 1 |
 | `clarity` | scale 1–5 | How easy is the main point on one read? | ≥ 4 | yes | 2 |

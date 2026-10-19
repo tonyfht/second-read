@@ -1,6 +1,6 @@
 {
   "name": "second-read",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "An editor's second read for LLM-written text: a closed-question editorial rubric, a judge schema and deterministic decision rules (evaluator-optimizer pattern). No runtime dependencies.",
   "type": "module",
   "license": "MIT",

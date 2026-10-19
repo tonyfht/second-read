@@ -1,6 +1,6 @@
 {
   "$comment": "Second Read editorial rubric. Edit freely: add, remove or reword criteria, change pass rules and thresholds. See RUBRIC.md for the format.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "thresholds": {
     "min_score": 0.75,
     "max_rewrites": 2,
@@ -44,8 +44,8 @@
       "required": true,
       "weight": 2,
       "question": {
-        "en": "Does the text state facts, numbers, rankings or causal claims without any support (a source, data, or the author's own first-hand experience)?",
-        "es": "¿Afirma el texto hechos, cifras, rankings o relaciones causa-efecto sin ningún respaldo (una fuente, datos o la experiencia directa del autor)?"
+        "en": "Does the text state numbers, studies, rankings, generalizations (\"most companies…\") or causal claims (\"X causes Y\") without any support (a source, the author's own data, or the author's first-hand experience)? These do not count: gaps marked for the author to fill in ([data], [placeholder], [source needed]), arithmetic the reader can check from the text itself, and widely known public facts.",
+        "es": "¿Afirma el texto cifras, estudios, rankings, generalizaciones (\"la mayoría de las empresas…\") o relaciones causa-efecto (\"X provoca Y\") sin ningún respaldo (una fuente, datos propios o la experiencia directa del autor)? No cuentan: los huecos marcados para que el autor los complete ([dato], [placeholder], [source needed]), los cálculos que el lector puede comprobar con el propio texto y los hechos públicos ampliamente conocidos."
       },
       "pass_if": "no"
     },

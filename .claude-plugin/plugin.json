@@ -1,6 +1,6 @@
 {
   "name": "second-read",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "An editor's second read before publishing: judge a draft with a closed-question rubric, rewrite it if it fails (at most twice), and deliver the final text with a short report.",
   "author": {
     "name": "Antonio Francisco Herrera Tabasco",

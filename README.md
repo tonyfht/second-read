@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-2E7A4C"></a>
-  <a href="CHANGELOG.md"><img alt="Version 0.1.1" src="https://img.shields.io/badge/version-0.1.1-1F1D1A"></a>
+  <a href="CHANGELOG.md"><img alt="Version 0.1.2" src="https://img.shields.io/badge/version-0.1.2-1F1D1A"></a>
   <a href="https://code.claude.com/docs/en/plugins"><img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude%20Code-plugin-C43D2B"></a>
   <a href="https://code.claude.com/docs/en/skills"><img alt="Agent Skill" src="https://img.shields.io/badge/Agent-Skill-C43D2B"></a>
   <a href="https://www.anthropic.com/engineering/building-effective-agents"><img alt="Pattern: evaluator-optimizer" src="https://img.shields.io/badge/pattern-evaluator--optimizer-6B6560"></a>
@@ -228,7 +228,7 @@ for information only with `"required": false, "weight": 0`.
 You bring the model calls. Install a tagged version from GitHub:
 
 ```bash
-npm install github:tonyfht/second-read#v0.1.1
+npm install github:tonyfht/second-read#v0.1.2
 ```
 
 ```js

@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-10-19
+
+### Changed
+
+- `unsupported_claims` question clarified in English and Spanish: it counts numbers, studies, rankings, generalizations ("most companies…") and causal claims without a source, own data or first-hand experience, and explicitly excludes gaps marked for the author (`[data]`, `[placeholder]`, `[source needed]`), arithmetic checkable from the text, and widely known public facts. Placeholders are what the writer is told to leave instead of inventing, so they should not fail the text.
+
 ## [0.1.1] - 2026-10-19
 
 ### Changed

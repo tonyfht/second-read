@@ -38,6 +38,13 @@ test("every criterion can both pass and fail", () => {
   }
 });
 
+test("unsupported_claims excludes placeholders, checkable arithmetic and public facts", () => {
+  const q = rubric.criteria.find((c) => c.id === "unsupported_claims").question;
+  for (const lang of ["en", "es"]) assert.match(q[lang], /\[placeholder\]/, lang);
+  assert.match(q.en, /arithmetic/);
+  assert.match(q.es, /cálculos/);
+});
+
 test("default thresholds are the documented values", () => {
   assert.deepEqual(resolveThresholds(rubric), { min_score: 0.75, max_rewrites: 2, rewrite_on_embedded_instructions: false });
   assert.deepEqual(resolveThresholds({ criteria: [] }), DEFAULT_THRESHOLDS);
