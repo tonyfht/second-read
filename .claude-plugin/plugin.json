@@ -1,0 +1,13 @@
+{
+  "name": "second-read",
+  "version": "0.1.0",
+  "description": "An editor's second read before publishing: judge a draft with a closed-question rubric, rewrite it if it fails (at most twice), and deliver the final text with a short report.",
+  "author": {
+    "name": "Antonio Francisco Herrera Tabasco",
+    "url": "https://github.com/tonyfht"
+  },
+  "homepage": "https://github.com/tonyfht/second-read",
+  "repository": "https://github.com/tonyfht/second-read",
+  "license": "MIT",
+  "keywords": ["writing", "editing", "review", "rubric", "linkedin", "newsletter", "evaluator-optimizer", "llm-as-judge"]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "second-read-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Run the Second Read loop outside Claude, with the Anthropic SDK and structured outputs.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "second-read": "./second-read.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.135.0"
+  }
+}

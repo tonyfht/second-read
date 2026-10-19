@@ -1,0 +1,17 @@
+{
+  "name": "second-read",
+  "description": "Second Read: an editorial review loop for Claude (evaluator-optimizer pattern).",
+  "owner": {
+    "name": "Antonio Francisco Herrera Tabasco",
+    "url": "https://github.com/tonyfht"
+  },
+  "plugins": [
+    {
+      "name": "second-read",
+      "source": ".",
+      "description": "Judge a draft with a closed-question editorial rubric, rewrite it if it fails, and deliver the final text with a short report.",
+      "category": "productivity",
+      "tags": ["writing", "editing", "linkedin", "newsletter", "evaluator-optimizer"]
+    }
+  ]
+}

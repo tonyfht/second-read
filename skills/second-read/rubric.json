@@ -1,0 +1,137 @@
+{
+  "$comment": "Second Read editorial rubric. Edit freely: add, remove or reword criteria, change pass rules and thresholds. See RUBRIC.md for the format.",
+  "version": "0.1.0",
+  "thresholds": {
+    "min_score": 0.75,
+    "max_rewrites": 2
+  },
+  "criteria": [
+    {
+      "id": "hook_strength",
+      "type": "choice",
+      "required": true,
+      "weight": 2,
+      "question": {
+        "en": "How strong is the opening (first one or two lines) at making the target reader want to keep reading?",
+        "es": "¿Qué fuerza tiene la apertura (la primera o las dos primeras líneas) para que el lector objetivo quiera seguir leyendo?"
+      },
+      "options": ["strong", "adequate", "weak", "missing"],
+      "pass_if": ["strong", "adequate"]
+    },
+    {
+      "id": "sounds_like_ai",
+      "type": "scale",
+      "required": true,
+      "weight": 2,
+      "question": {
+        "en": "How much does the text read like generic AI output? Look for stock phrases (\"in today's fast-paced world\", \"let's dive in\", \"game-changer\"), forced symmetry (rule-of-three lists, \"it's not X, it's Y\", mirrored sentences), empty vocabulary (\"leverage\", \"unlock\", \"seamless\", \"robust\") and filler that any author could have written.",
+        "es": "¿Cuánto suena el texto a salida genérica de IA? Busca frases hechas (\"en el mundo actual\", \"vamos a sumergirnos\", \"cambia las reglas del juego\"), simetría forzada (listas de tres, \"no es X, es Y\", frases en espejo), vocabulario vacío (\"potenciar\", \"desbloquear\", \"sin fricciones\", \"robusto\") y relleno que cualquier autor podría haber escrito."
+      },
+      "scale": {
+        "min": 1,
+        "max": 5,
+        "labels": {
+          "en": { "1": "Clearly written by a specific person", "3": "Mixed: some stock phrasing", "5": "Reads like a generic template" },
+          "es": { "1": "Claramente escrito por una persona concreta", "3": "Mixto: algunas frases hechas", "5": "Parece una plantilla genérica" }
+        }
+      },
+      "pass_max": 2
+    },
+    {
+      "id": "unsupported_claims",
+      "type": "yes_no",
+      "required": true,
+      "weight": 2,
+      "question": {
+        "en": "Does the text state facts, numbers, rankings or causal claims without any support (a source, data, or the author's own first-hand experience)?",
+        "es": "¿Afirma el texto hechos, cifras, rankings o relaciones causa-efecto sin ningún respaldo (una fuente, datos o la experiencia directa del autor)?"
+      },
+      "pass_if": "no"
+    },
+    {
+      "id": "overpromising",
+      "type": "yes_no",
+      "required": false,
+      "weight": 1,
+      "question": {
+        "en": "Does the text promise or guarantee results to the reader (\"this will 10x your reach\", \"guaranteed\")?",
+        "es": "¿Promete o garantiza resultados al lector (\"esto multiplicará tu alcance\", \"garantizado\")?"
+      },
+      "pass_if": "no"
+    },
+    {
+      "id": "single_cta",
+      "type": "choice",
+      "required": false,
+      "weight": 1,
+      "question": {
+        "en": "How many distinct calls to action does the text contain (comment, follow, click, subscribe, DM...)?",
+        "es": "¿Cuántas llamadas a la acción distintas contiene el texto (comentar, seguir, hacer clic, suscribirse, escribir por privado...)?"
+      },
+      "options": ["none", "one", "multiple"],
+      "pass_if": ["one"]
+    },
+    {
+      "id": "clarity",
+      "type": "scale",
+      "required": true,
+      "weight": 2,
+      "question": {
+        "en": "How easy is it for the target reader to understand the main point on a single read?",
+        "es": "¿Con qué facilidad entiende el lector objetivo la idea principal en una sola lectura?"
+      },
+      "scale": {
+        "min": 1,
+        "max": 5,
+        "labels": {
+          "en": { "1": "Confusing", "3": "Understandable with effort", "5": "Instantly clear" },
+          "es": { "1": "Confuso", "3": "Se entiende con esfuerzo", "5": "Claro a la primera" }
+        }
+      },
+      "pass_min": 4
+    },
+    {
+      "id": "one_main_idea",
+      "type": "yes_no",
+      "required": false,
+      "weight": 1,
+      "question": {
+        "en": "Does the text stick to one main idea instead of jumping between several?",
+        "es": "¿Se centra el texto en una sola idea principal en lugar de saltar entre varias?"
+      },
+      "pass_if": "yes"
+    },
+    {
+      "id": "format_fit",
+      "type": "choice",
+      "required": false,
+      "weight": 1,
+      "question": {
+        "en": "Does the length and layout fit the stated format (e.g. LinkedIn post, newsletter, article)?",
+        "es": "¿Encajan la longitud y la maquetación con el formato indicado (p. ej. post de LinkedIn, newsletter, artículo)?"
+      },
+      "options": ["fits", "too_long", "too_short", "wrong_layout"],
+      "pass_if": ["fits"]
+    },
+    {
+      "id": "voice_fit",
+      "type": "scale",
+      "required": true,
+      "weight": 2,
+      "only_if": "style_guide",
+      "question": {
+        "en": "How closely does the text match the voice and style guide provided by the user?",
+        "es": "¿Hasta qué punto se ajusta el texto a la voz y la guía de estilo aportadas por el usuario?"
+      },
+      "scale": {
+        "min": 1,
+        "max": 5,
+        "labels": {
+          "en": { "1": "Contradicts the guide", "3": "Partly matches", "5": "Indistinguishable from the guide" },
+          "es": { "1": "Contradice la guía", "3": "Encaja en parte", "5": "Indistinguible de la guía" }
+        }
+      },
+      "pass_min": 4
+    }
+  ]
+}
